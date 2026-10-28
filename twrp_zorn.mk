@@ -19,3 +19,11 @@ PRODUCT_BRAND := POCO
 PRODUCT_MODEL := POCO F7 Pro
 PRODUCT_MANUFACTURER := Xiaomi
 
+# Theme
+AERA_STATUS_ICONS_ALIGN := center
+#AERA_Y_OFFSET := 99
+#AERA_H_OFFSET := -99
+
+# Strongbox Device Decryption
+AERA_INCLUDE_OMAPI := true
+
