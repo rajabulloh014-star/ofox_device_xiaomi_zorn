@@ -22,8 +22,17 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 # Configure twrp common.mk
 $(call inherit-product, vendor/twrp/config/common.mk)
 
-# Device-specific OrangeFox configuration
-$(call inherit-product, $(DEVICE_PATH)/fox_zorn.mk)
+# Device-specific AERA configuration
+$(call inherit-product, $(DEVICE_PATH)/aera_zorn.mk)
+
+PRODUCT_PACKAGES += \
+    aera-audio-bridge \
+    aera-audio-primary-opener \
+    aera-zorn-wlan-mac
+ifeq ($(AERA_ENABLE_MOBILE_DATA),1)
+    PRODUCT_PACKAGES += aera-cellular-provider
+endif
+
 
 # Display
 PRODUCT_PROPERTY_OVERRIDES += vendor.display.enable_spr=1
