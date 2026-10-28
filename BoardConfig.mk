@@ -128,37 +128,47 @@ AERA_INCLUDE_LPTOOLS := true
 
 # Debug
 TARGET_USES_LOGD := true
-TWRP_INCLUDE_LOGCAT := true
+AERA_INCLUDE_LOGCAT := true
 
 # Fastbootd
-TW_INCLUDE_FASTBOOTD := true
+AERA_INCLUDE_FASTBOOTD := true
 
-# Other TWRP Configurations
-TW_THEME := portrait_hdpi
-TW_FRAMERATE := 120
+# Other AERA Configurations
+AERA_THEME := portrait_hdpi
+AERA_FRAMERATE := 120
 RECOVERY_SDCARD_ON_DATA := true
 BOARD_HAS_NO_REAL_SDCARD := true
 TARGET_RECOVERY_QCOM_RTC_FIX := true
-TW_EXCLUDE_DEFAULT_USB_INIT := true
-TW_INCLUDE_NTFS_3G := true
-TW_NO_EXFAT_FUSE := true
-TW_USE_TOOLBOX := true
+AERA_EXCLUDE_DEFAULT_USB_INIT := true
+AERA_INCLUDE_NTFS_3G := true
+AERA_NO_EXFAT_FUSE := true
+AERA_USE_TOOLBOX := true
 TARGET_USES_MKE2FS := true
-TW_INPUT_BLACKLIST := "hbtp_vm"
-TW_BRIGHTNESS_PATH := "/sys/class/backlight/panel0-backlight/brightness"
-TW_MAX_BRIGHTNESS := 2047
-TW_EXTRA_LANGUAGES := true
-TW_DEFAULT_LANGUAGE := en
-TW_DEFAULT_BRIGHTNESS := 200
-TW_NO_SCREEN_BLANK := true
-TW_EXCLUDE_APEX := true
-TW_HAS_EDL_MODE := true
-TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true
-TW_LOAD_VENDOR_BOOT_MODULES := true
-TW_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko focaltech_touch.ko nxp-nci.ko qti_battery_charger.ko xiaomi_touch.ko"
-TW_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
-TW_CUSTOM_CPU_TEMP_PATH := "/sys/class/thermal/thermal_zone16/temp"
+AERA_INPUT_BLACKLIST := "hbtp_vm"
+AERA_BRIGHTNESS_PATH := "/sys/class/backlight/panel0-backlight/brightness"
+AERA_MAX_BRIGHTNESS := 2047
+AERA_EXTRA_LANGUAGES := true
+AERA_DEFAULT_LANGUAGE := en
+AERA_DEFAULT_BRIGHTNESS := 200
+AERA_NO_SCREEN_BLANK := true
+AERA_EXCLUDE_APEX := true
+AERA_HAS_EDL_MODE := true
+AERA_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true
+AERA_LOAD_VENDOR_BOOT_MODULES := true
+AERA_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko focaltech_touch.ko nxp-nci.ko qti_battery_charger.ko xiaomi_touch.ko"
+AERA_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
+AERA_CUSTOM_CPU_TEMP_PATH := "/sys/class/thermal/thermal_zone16/temp"
 
 # Haptic
-TW_SUPPORT_INPUT_AIDL_HAPTICS := true
-TW_SUPPORT_INPUT_AIDL_HAPTICS_FQNAME := "IVibrator/vibratorfeature"
+AERA_SUPPORT_INPUT_AIDL_HAPTICS := true
+AERA_SUPPORT_INPUT_AIDL_HAPTICS_FQNAME := "IVibrator/vibratorfeature"
+
+
+# Our WLAN modules do not need to be loaded after decryption; load as normal
+AERA_LOAD_VENDOR_MODULES := "$(subst ",,$(AERA_LOAD_VENDOR_MODULES)) rfkill.ko cfg80211.ko gsim.ko rmnet_mem.ko ipam.ko qca_cld3_qca6750.ko"
+# Still use post-decrypt event for the audio bootstrap
+# Placeholder module so the loader still publishes post.decrypt.modules=true
+AERA_POST_DECRYPT_MODULES := "aera_post_decrypt_stage_only.ko"
+AERA_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
+AERA_CUSTOM_CPU_TEMP_PATH := "/sys/class/thermal/thermal_zone48/temp"
+AERA_BATTERY_SYSFS_WAIT_SECONDS := 6
