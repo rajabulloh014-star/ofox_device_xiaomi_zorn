@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 #include "runtime.hpp"
 
-namespace aera::mobile::peridot {
+namespace aera::mobile::zorn {
 std::atomic<bool> cancel{false}, exiting{false}, working{false};
 std::mutex state_mutex, completion_mutex;
 std::condition_variable completion;
