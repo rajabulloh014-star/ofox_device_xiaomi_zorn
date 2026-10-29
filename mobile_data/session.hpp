@@ -2,7 +2,7 @@
 #pragma once
 #include "runtime.hpp"
 
-namespace aera::mobile::peridot {
+namespace aera::mobile::zorn {
 struct Session {
   Fd lease;
   std::unique_ptr<QmiClient> dpm,wda,wds,nas;
