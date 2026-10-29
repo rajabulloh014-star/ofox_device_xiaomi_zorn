@@ -2,7 +2,7 @@
  * Copyright (C) 2026 AERA Recovery Project contributors
  * SPDX-License-Identifier: Apache-2.0
  *
- * Narrow plugin-to-PAL PCM bridge for Peridot / Poco F6 recovery. Untrusted
+ * Narrow plugin-to-PAL PCM bridge for zorn / Poco F7 recovery. Untrusted
  * plugins never receive access to ALSA, stock partitions, or this process.
  * Only the dedicated browser and media UIDs may connect and send fixed-format
  * audio over one abstract local socket.
