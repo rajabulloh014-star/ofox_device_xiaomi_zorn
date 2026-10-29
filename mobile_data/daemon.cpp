@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 #include "session.hpp"
 
-namespace aera::mobile::peridot {
+namespace aera::mobile::zorn {
 void OnSignal(int);
 void Worker(std::string apn,int subscription) {
   std::string failure;
