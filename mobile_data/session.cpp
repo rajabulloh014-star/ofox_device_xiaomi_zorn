@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 #include "session.hpp"
 
-namespace aera::mobile::peridot {
+namespace aera::mobile::zorn {
 std::map<unsigned,std::string> Session::SimIdentities(QmiClient &uim) {
   std::map<unsigned,std::string> out;
   for(const auto &entry:ParseSimIdentifiers(Field(uim.Call(0x47,{},5,&cancel),0x10)))
