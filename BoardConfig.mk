@@ -165,8 +165,8 @@ AERA_SUPPORT_INPUT_AIDL_HAPTICS_FQNAME := "IVibrator/vibratorfeature"
 
 
 # Our WLAN modules do not need to be loaded after decryption; load as normal
-AERA_LOAD_VENDOR_MODULES := "$(subst ",,$(AERA_LOAD_VENDOR_MODULES)) rfkill.ko cfg80211.ko gsim.ko rmnet_mem.ko ipam.ko qca_cld3_qca6750.ko"
 # Still use post-decrypt event for the audio bootstrap
+AERA_LOAD_VENDOR_MODULES := "$(subst ",,$(AERA_LOAD_VENDOR_MODULES)) rfkill.ko cfg80211.ko gsim.ko rmnet_mem.ko ipam.ko qca_cld3_kiwi_v2.ko"
 # Placeholder module so the loader still publishes post.decrypt.modules=true
 AERA_POST_DECRYPT_MODULES := "aera_post_decrypt_stage_only.ko"
 AERA_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
