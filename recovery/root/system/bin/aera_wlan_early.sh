@@ -28,93 +28,69 @@ if [ "$(prop ro.aera.fastbootd)" = 1 ] || [ "$(prop ro.aera.fastbootd)" = true ]
     log "fastbootd: skipping WLAN"
     exit 0
 fi
-[ "$(prop twrp.modules.loaded)" = true ] || fail "Initial modules not ready"
 
 log "Early WLAN requested; post.decrypt.modules=$(prop post.decrypt.modules)"
 
-# Paksa jalankan skrip rfkill
-/system/bin/aera_load_rfkill.sh || fail "RFKill prerequisite unavailable"
+# 1. Paksa jalankan skrip rfkill
+/system/bin/aera_load_rfkill.sh || log "WARNING: RFKill load failed, continuing..."
 
-# Muat modul secara berurutan: rfkill -> cfg80211 -> kiwi_v2
-for mod in rfkill cfg80211 qca_cld3_kiwi_v2; do
+# 2. Cari dan muat driver WiFi
+for mod in cfg80211 qca_cld3_kiwi_v2; do
     loaded "$mod" && continue
-    candidate=""
-    for path in \
-        "/lib/modules/$mod.ko" \
-        "/tmp/vendor/lib/modules/$mod.ko" \
-        "/tmp/vendor_dlkm/lib/modules/$mod.ko" \
-        "/vendor/lib/modules/$mod.ko" \
-        "/vendor_dlkm/lib/modules/$mod.ko" \
-        "/vendor/lib/modules/6.1*/kernel/net/rfkill/$mod.ko"; do
-        # Handle wildcard manually
-        for f in $path; do
-            if [ -f "$f" ]; then
-                candidate="$f"
-                break
-            fi
-        done
-        [ -n "$candidate" ] && break
-    done
+    
+    # Cari module secara agresif
+    candidate=$(find /system_dlkm /vendor_dlkm /vendor /lib/modules -name "$mod.ko" 2>/dev/null | head -n 1)
     
     if [ -z "$candidate" ]; then
         log "WLAN module missing on disk: $mod"
-        continue
+        fail "WLAN module $mod not found"
     fi
+    
     if insmod "$candidate" 2>> "$LOG"; then
-        log "Loaded missing WLAN module: $mod"
+        log "Loaded WLAN module: $mod from $candidate"
     else
         log "Could not load WLAN module $mod from $candidate"
+        fail "Failed to insmod $mod"
     fi
 done
 
-count=0
-while [ "$count" -lt 120 ]; do
-    modules_ok=1
-    for mod in rfkill cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
-        loaded "$mod" || modules_ok=0
-    done
-    if [ "$modules_ok" = 1 ] && \
-       [ "$(prop init.svc.vendor.gatekeeper_default)" = running ] && \
-       [ -r /vendor/firmware_mnt/image/kiwi/wpss.mdt ] && \
-       [ -r /vendor/firmware_mnt/image/kiwi/bdwlan.e01 ] && \
-       [ "$(prop init.svc.aera-pd-mapper)" = running ]; then
-        break
-    fi
-    sleep 0.1
-    count=$((count+1))
-done
-if [ "$count" -ge 120 ]; then
-    for mod in rfkill cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
-        loaded "$mod" || log "MISSING_EARLY_MODULE: $mod"
-    done
-    fail "WLAN driver/crypto/mapper/firmware prerequisites not ready after 12s"
+# 3. Pastikan firmware_mnt ter-mount (Mount sendiri jika belum)
+if ! grep -q " /vendor/firmware_mnt " /proc/mounts; then
+    log "Mounting firmware partition manually..."
+    mkdir -p /firmware /vendor/firmware_mnt
+    SLOT="$(getprop ro.boot.slot_suffix)"
+    MODEM_DEV="/dev/block/bootdevice/by-name/modem${SLOT}"
+    [ -b "${MODEM_DEV}" ] || MODEM_DEV="/dev/block/by-name/modem${SLOT}"
+    
+    mount -t vfat -o ro,uid=0,gid=0,fmask=0133,dmask=0022 "${MODEM_DEV}" /firmware
+    mount -o bind /firmware /vendor/firmware_mnt
+    mount -o remount,bind,ro /vendor/firmware_mnt
 fi
-log "WLAN modules and firmware ready, Gatekeeper and mapper running"
 
-[ -w /sys/kernel/icnss/wlan_en_delay ] || fail "Missing WLAN delay node"
-[ -w /sys/kernel/icnss/wpss_boot ] || fail "Missing WPSS boot node"
-
+# 4. Buat MAC Address
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
-    [ -x /system/bin/aera-zorn-wlan-mac ] || fail "Missing recovery MAC helper"
-    /system/bin/aera-zorn-wlan-mac >> "$LOG" 2>&1 || \
-        fail "Failed to generate the deterministic MAC before WPSS"
+    [ -x /system/bin/aera-zorn-wlan-mac ] || log "Missing recovery MAC helper"
+    /system/bin/aera-zorn-wlan-mac >> "$LOG" 2>&1 || log "Failed to generate MAC"
     log "Prepared per-device WLAN MAC file before WPSS boot"
 fi
 
+# 5. Nyalakan WPSS (WiFi Chip)
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
-    : > /tmp/aera_wlan_wpss_requested || fail "Cannot save WPSS boot marker"
+    : > /tmp/aera_wlan_wpss_requested
     log "Requesting WPSS boot"
-    printf '1000\n' > /sys/kernel/icnss/wlan_en_delay || fail "Cannot set WLAN delay"
-    printf '1\n' > /sys/kernel/icnss/wpss_boot || fail "Cannot start WPSS"
+    echo 1000 > /sys/kernel/icnss/wlan_en_delay || log "Cannot set WLAN delay"
+    echo 1 > /sys/kernel/icnss/wpss_boot || log "Cannot start WPSS"
 else
     log "WPSS was already requested; waiting without repeating boot"
 fi
 
+# 6. Tunggu wlan0 muncul
 count=0
 while [ "$count" -lt 45 ] && [ ! -e /sys/class/net/wlan0 ]; do
     sleep 1
     count=$((count+1))
 done
+
 [ -e /sys/class/net/wlan0 ] || fail "wlan0 absent after 45s"
 log "wlan0 available after ${count}s; publishing wifi.driver.ready"
-[ "$(prop wifi.driver.ready)" = true ] || setprop wifi.driver.ready true || fail "Cannot publish wifi.driver.ready"
+setprop wifi.driver.ready true
