@@ -224,4 +224,4 @@ int Main(int argc,char **argv) {
   Disconnect();if(worker.joinable())worker.join();unlink(kSocket);return 0;
 }
 }
-int main(int argc,char **argv){return aera::mobile::peridot::Main(argc,argv);}
+int main(int argc,char **argv){return aera::mobile::zorn::Main(argc,argv);}
