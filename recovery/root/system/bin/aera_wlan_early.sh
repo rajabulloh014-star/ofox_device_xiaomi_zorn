@@ -38,7 +38,6 @@ log "Early WLAN requested; post.decrypt.modules=$(prop post.decrypt.modules)"
 for mod in cfg80211 qca_cld3_kiwi_v2; do
     loaded "$mod" && continue
     
-    # Cari module secara agresif
     candidate=$(find /system_dlkm /vendor_dlkm /vendor /lib/modules -name "$mod.ko" 2>/dev/null | head -n 1)
     
     if [ -z "$candidate" ]; then
