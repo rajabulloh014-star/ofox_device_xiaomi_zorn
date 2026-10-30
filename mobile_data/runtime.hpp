@@ -52,11 +52,10 @@ extern uint64_t pin_request_sequence;
 
 void ClearPin(std::string &pin);
 std::string SimIdentity(const Bytes &iccid);
-std::string Read(const std::string &path,size_t maximum=16384);
-bool Write(const std::string &path,const std::string &value,
-           int flags=O_WRONLY,mode_t mode=0600);
+std::string Read(const std::string &path, size_t maximum=16384);
+bool Write(const std::string &path, const std::string &value, int flags=O_WRONLY, mode_t mode=0600);
 void SaveLocked();
-void Phase(const std::string &state,const std::string &message);
+void Phase(const std::string &state, const std::string &message);
 void Log(const std::string &message);
 void ClearNrLocked();
 void ClearConnectionLocked();
@@ -67,15 +66,15 @@ std::string ModemPath();
 bool HasRmtfsUio();
 std::string Capability();
 int Run(const std::vector<std::string> &args);
-void Ip(std::initializer_list<std::string> args,bool required=true);
+void Ip(std::initializer_list<std::string> args, bool required=true);
 void Module(const std::string &name);
 using IpaData=std::array<uint32_t,6>;
 IpaData Ipa(IpaData data);
-Bytes Attribute(uint16_t type,const Bytes &value);
-void Append(Bytes &a,const Bytes &b);
+Bytes Attribute(uint16_t type, const Bytes &value);
+void Append(Bytes &a, const Bytes &b);
 Bytes StringBytes(const std::string &s);
 void CreateLink();
-std::string Address(const Values &v,uint8_t tag);
+std::string Address(const Values &v, uint8_t tag);
 int Prefix(const std::string &netmask);
 bool WifiConnected();
 }
