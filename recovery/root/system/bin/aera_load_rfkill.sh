@@ -33,31 +33,15 @@ case "$SLOT" in
     *) fail "Invalid active slot: $SLOT" ;;
 esac
 
-# Use existing /system_dlkm, otherwise mount via recovery's mechanism, otherwise our own mount
-ROOT=/system_dlkm
-if ! grep -q " $ROOT " /proc/mounts; then
-    mount "$ROOT"
-    if grep -q " $ROOT " /proc/mounts; then
-        LOGMSG "Mounted $ROOT through recovery"
-    else
-        LOGMSG "Recovery mount of /system_dlkm unavailable; trying active-slot fallback"
-        ROOT=/mnt/aera-rfkill-system_dlkm
-        if ! grep -q " $ROOT " /proc/mounts; then
-            PART="/dev/block/mapper/system_dlkm$SLOT"
-            [ -b "$PART" ] || fail "Missing partition: $PART"
-            mkdir -p "$ROOT" || fail "Could not create $ROOT"
-            mount -t erofs -o ro "$PART" "$ROOT" || \
-                mount -t ext4 -o ro "$PART" "$ROOT" || \
-                fail "Could not mount $PART"
-            LOGMSG "Mounted $PART read-only at $ROOT"
-        fi
-    fi
-fi
-
+# Cek semua kemungkinan lokasi rfkill.ko
 for MODULE in \
-    "$ROOT/flatten/lib/modules/rfkill.ko" \
-    "$ROOT/lib/modules/rfkill.ko" \
-    "$ROOT"/lib/modules/*/kernel/net/rfkill/rfkill.ko; do
+    /system_dlkm/lib/modules/6.1*/kernel/net/rfkill/rfkill.ko \
+    /system_dlkm/lib/modules/rfkill.ko \
+    /vendor_dlkm/lib/modules/6.1*/kernel/net/rfkill/rfkill.ko \
+    /vendor_dlkm/lib/modules/rfkill.ko \
+    /vendor/lib/modules/6.1*/kernel/net/rfkill/rfkill.ko \
+    /vendor/lib/modules/rfkill.ko; do
+    
     [ -f "$MODULE" ] || continue
 
     if rfkill_loaded; then
@@ -71,4 +55,4 @@ for MODULE in \
     finish 0
 done
 
-fail "rfkill.ko not found in $ROOT"
+fail "rfkill.ko not found in any known module paths"
