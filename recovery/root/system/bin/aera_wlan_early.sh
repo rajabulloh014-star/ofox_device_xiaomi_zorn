@@ -72,8 +72,8 @@ while [ "$count" -lt 120 ]; do
     done
     if [ "$modules_ok" = 1 ] && \
        [ "$(prop init.svc.vendor.gatekeeper_default)" = running ] && \
-       [ -r /vendor/firmware_mnt/image/qca6750/wpss.mdt ] && \
-       [ -r /vendor/firmware_mnt/image/qca6750/bdwlan.bin ] && \
+       [ -r /vendor/firmware_mnt/image/kiwi/wpss.mdt ] && \
+       [ -r /vendor/firmware_mnt/image/kiwi/bdwlan.e01 ] && \
        [ "$(prop init.svc.aera-pd-mapper)" = running ]; then
         break
     fi
@@ -96,8 +96,8 @@ log "WLAN modules and firmware ready, Gatekeeper and mapper running"
 # relying on recovery's later Wi-Fi setup to generate the file.
 # This modifies only the recovery ramdisk
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
-    [ -x /system/bin/aera-peridot-wlan-mac ] || fail "Missing recovery MAC helper"
-    /system/bin/aera-peridot-wlan-mac >> "$LOG" 2>&1 || \
+    [ -x /system/bin/aera-zorn-wlan-mac ] || fail "Missing recovery MAC helper"
+    /system/bin/aera-zorn-wlan-mac >> "$LOG" 2>&1 || \
         fail "Failed to generate the deterministic MAC before WPSS"
     log "Prepared per-device WLAN MAC file before WPSS boot"
 fi
