@@ -18,7 +18,6 @@ loaded() {
     fi
 }
 
-# Both the early trigger and the post-decrypt fallback call this helper
 if [ -e /sys/class/net/wlan0 ]; then
     log "wlan0 already present; no WPSS re-boot"
     [ "$(prop wifi.driver.ready)" = true ] || setprop wifi.driver.ready true
@@ -33,12 +32,11 @@ fi
 
 log "Early WLAN requested; post.decrypt.modules=$(prop post.decrypt.modules)"
 
-# rfkill may not be loaded, e.g. on HyperOS, even after the initial module pass
+# Paksa jalankan skrip rfkill
 /system/bin/aera_load_rfkill.sh || fail "RFKill prerequisite unavailable"
 
-# The initial module pass may have failed before rfkill exists
-# Now rfkill is present, retry the modules that depend on it in correct, dependency order
-for mod in cfg80211 qca_cld3_kiwi_v2; do
+# Muat modul secara berurutan: rfkill -> cfg80211 -> kiwi_v2
+for mod in rfkill cfg80211 qca_cld3_kiwi_v2; do
     loaded "$mod" && continue
     candidate=""
     for path in \
@@ -46,12 +44,18 @@ for mod in cfg80211 qca_cld3_kiwi_v2; do
         "/tmp/vendor/lib/modules/$mod.ko" \
         "/tmp/vendor_dlkm/lib/modules/$mod.ko" \
         "/vendor/lib/modules/$mod.ko" \
-        "/vendor_dlkm/lib/modules/$mod.ko"; do
-        if [ -f "$path" ]; then
-            candidate="$path"
-            break
-        fi
+        "/vendor_dlkm/lib/modules/$mod.ko" \
+        "/vendor/lib/modules/6.1*/kernel/net/rfkill/$mod.ko"; do
+        # Handle wildcard manually
+        for f in $path; do
+            if [ -f "$f" ]; then
+                candidate="$f"
+                break
+            fi
+        done
+        [ -n "$candidate" ] && break
     done
+    
     if [ -z "$candidate" ]; then
         log "WLAN module missing on disk: $mod"
         continue
@@ -62,12 +66,11 @@ for mod in cfg80211 qca_cld3_kiwi_v2; do
         log "Could not load WLAN module $mod from $candidate"
     fi
 done
-# The pd-mapper helper binds the already-mounted /firmware partition to
-# /vendor/firmware_mnt AFTER AERA has unmounted its temporary /vendor view
+
 count=0
 while [ "$count" -lt 120 ]; do
     modules_ok=1
-    for mod in cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
+    for mod in rfkill cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
         loaded "$mod" || modules_ok=0
     done
     if [ "$modules_ok" = 1 ] && \
@@ -81,7 +84,7 @@ while [ "$count" -lt 120 ]; do
     count=$((count+1))
 done
 if [ "$count" -ge 120 ]; then
-    for mod in cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
+    for mod in rfkill cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
         loaded "$mod" || log "MISSING_EARLY_MODULE: $mod"
     done
     fail "WLAN driver/crypto/mapper/firmware prerequisites not ready after 12s"
@@ -91,10 +94,6 @@ log "WLAN modules and firmware ready, Gatekeeper and mapper running"
 [ -w /sys/kernel/icnss/wlan_en_delay ] || fail "Missing WLAN delay node"
 [ -w /sys/kernel/icnss/wpss_boot ] || fail "Missing WPSS boot node"
 
-# The driver requests wlan_mac.bin about 7s after this worker starts.
-# Provide AERA's per-device identity before requesting WPSS, instead of
-# relying on recovery's later Wi-Fi setup to generate the file.
-# This modifies only the recovery ramdisk
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
     [ -x /system/bin/aera-zorn-wlan-mac ] || fail "Missing recovery MAC helper"
     /system/bin/aera-zorn-wlan-mac >> "$LOG" 2>&1 || \
@@ -102,8 +101,6 @@ if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
     log "Prepared per-device WLAN MAC file before WPSS boot"
 fi
 
-# This marker survives the post-decrypt fallback but not a recovery reboot
-# Avoid retriggering a remote processor that is already booting or running
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
     : > /tmp/aera_wlan_wpss_requested || fail "Cannot save WPSS boot marker"
     log "Requesting WPSS boot"
