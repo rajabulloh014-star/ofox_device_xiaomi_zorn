@@ -38,7 +38,8 @@
 #include <thread>
 #include <csignal>
 
-namespace aera::mobile::peridot {
+// --- PERUBAHAN DI SINI: peridot menjadi zorn ---
+namespace aera::mobile::zorn {
 inline constexpr const char *kDirectory="/tmp/aera-cellular";
 inline constexpr const char *kInterface="rmnet_aera";
 inline constexpr const char *kHelperDirectory="/system/bin";
