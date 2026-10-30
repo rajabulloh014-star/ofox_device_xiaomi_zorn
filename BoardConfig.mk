@@ -155,20 +155,17 @@ AERA_EXCLUDE_APEX := true
 AERA_HAS_EDL_MODE := true
 AERA_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true
 AERA_LOAD_VENDOR_BOOT_MODULES := true
-AERA_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko focaltech_touch.ko nxp-nci.ko qti_battery_charger.ko xiaomi_touch.ko"
-AERA_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
-AERA_CUSTOM_CPU_TEMP_PATH := "/sys/class/thermal/thermal_zone16/temp"
 
 # Haptic
 AERA_SUPPORT_INPUT_AIDL_HAPTICS := true
 AERA_SUPPORT_INPUT_AIDL_HAPTICS_FQNAME := "IVibrator/vibratorfeature"
 
-
-# Our WLAN modules do not need to be loaded after decryption; load as normal
-# Still use post-decrypt event for the audio bootstrap
-AERA_LOAD_VENDOR_MODULES := "$(subst ",,$(AERA_LOAD_VENDOR_MODULES)) rfkill.ko cfg80211.ko gsim.ko rmnet_mem.ko ipam.ko qca_cld3_kiwi_v2.ko"
-# Placeholder module so the loader still publishes post.decrypt.modules=true
+# --- Modules (Termasuk WiFi) ---
+# Menggabungkan semua modul ke dalam satu baris untuk menghindari duplikasi
+AERA_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko focaltech_touch.ko nxp-nci.ko qti_battery_charger.ko xiaomi_touch.ko rfkill.ko cfg80211.ko gsim.ko rmnet_mem.ko ipam.ko qca_cld3_kiwi_v2.ko"
 AERA_POST_DECRYPT_MODULES := "aera_post_decrypt_stage_only.ko"
 AERA_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
+
+# Thermal & Battery
 AERA_CUSTOM_CPU_TEMP_PATH := "/sys/class/thermal/thermal_zone48/temp"
 AERA_BATTERY_SYSFS_WAIT_SECONDS := 6
