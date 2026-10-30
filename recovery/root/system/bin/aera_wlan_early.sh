@@ -11,8 +11,8 @@ log() {
 fail() { log "STOP: $*"; exit 1; }
 prop() { getprop "$1" 2>/dev/null; }
 loaded() {
-    if [ "$1" = qca_cld3_qca6750 ]; then
-        grep -Eq '^(qca_cld3_qca6750|wlan) ' /proc/modules 2>/dev/null
+    if [ "$1" = qca_cld3_kiwi_v2 ]; then
+        grep -Eq '^(qca_cld3_kiwi_v2|wlan) ' /proc/modules 2>/dev/null
     else
         grep -q "^$1 " /proc/modules 2>/dev/null
     fi
@@ -38,7 +38,7 @@ log "Early WLAN requested; post.decrypt.modules=$(prop post.decrypt.modules)"
 
 # The initial module pass may have failed before rfkill exists
 # Now rfkill is present, retry the modules that depend on it in correct, dependency order
-for mod in cfg80211 qca_cld3_qca6750; do
+for mod in cfg80211 qca_cld3_kiwi_v2; do
     loaded "$mod" && continue
     candidate=""
     for path in \
@@ -67,7 +67,7 @@ done
 count=0
 while [ "$count" -lt 120 ]; do
     modules_ok=1
-    for mod in cfg80211 gsim rmnet_mem ipam qca_cld3_qca6750; do
+    for mod in cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
         loaded "$mod" || modules_ok=0
     done
     if [ "$modules_ok" = 1 ] && \
@@ -81,7 +81,7 @@ while [ "$count" -lt 120 ]; do
     count=$((count+1))
 done
 if [ "$count" -ge 120 ]; then
-    for mod in cfg80211 gsim rmnet_mem ipam qca_cld3_qca6750; do
+    for mod in cfg80211 gsim rmnet_mem ipam qca_cld3_kiwi_v2; do
         loaded "$mod" || log "MISSING_EARLY_MODULE: $mod"
     done
     fail "WLAN driver/crypto/mapper/firmware prerequisites not ready after 12s"
