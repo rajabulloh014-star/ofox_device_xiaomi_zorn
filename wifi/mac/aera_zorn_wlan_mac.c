@@ -15,7 +15,6 @@
 #include <sys/system_properties.h>
 #include <unistd.h>
 
-// --- PERUBAHAN DI SINI: qca6750 menjadi kiwi ---
 #define MAC_PATH "/vendor/firmware/wlan/qca_cld/kiwi/wlan_mac.bin"
 #define MAC_DIR  "/vendor/firmware/wlan/qca_cld/kiwi"
 
@@ -43,7 +42,6 @@ int main(void) {
         return 1;
     }
 
-    /* /vendor must be the recovery ramdisk, not a mounted live-ROM partition. */
     FILE *mounts = fopen("/proc/mounts", "r");
     if (!mounts) {
         perror("early MAC: open /proc/mounts");
