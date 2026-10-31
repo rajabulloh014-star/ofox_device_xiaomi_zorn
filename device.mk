@@ -62,3 +62,7 @@ PRODUCT_COPY_FILES += \
 # Salin konfigurasi firmware Wi-Fi kiwi_v2
 PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/recovery/root/vendor/etc/wifi/kiwi_v2/WCNSS_qcom_cfg.ini:$(TARGET_COPY_OUT_RECOVERY)/root/vendor/etc/wifi/kiwi_v2/WCNSS_qcom_cfg.ini
+
+# Salin file konfigurasi wpa_supplicant
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/recovery/root/vendor/etc/wifi/wpa_supplicant.conf:$(TARGET_COPY_OUT_RECOVERY)/root/vendor/etc/wifi/wpa_supplicant.conf
