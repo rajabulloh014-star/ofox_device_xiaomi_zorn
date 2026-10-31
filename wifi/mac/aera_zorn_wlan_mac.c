@@ -15,8 +15,9 @@
 #include <sys/system_properties.h>
 #include <unistd.h>
 
-#define MAC_PATH "/vendor/firmware/wlan/qca_cld/kiwi/wlan_mac.bin"
-#define MAC_DIR  "/vendor/firmware/wlan/qca_cld/kiwi"
+// PATH SUDAH DIPERBAIKI KE kiwi_v2
+#define MAC_PATH "/vendor/firmware/wlan/qca_cld/kiwi_v2/wlan_mac.bin"
+#define MAC_DIR  "/vendor/firmware/wlan/qca_cld/kiwi_v2"
 
 static uint64_t fnv1a64(const char *serial) {
     uint64_t hash = UINT64_C(1469598103934665603);
