@@ -1,0 +1,3 @@
+softdep cfg80211 pre: rfkill
+softdep mac80211 pre: cfg80211
+softdep qca_cld3_kiwi_v2 pre: mac80211 wlan_firmware_service
