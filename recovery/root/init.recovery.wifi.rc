@@ -22,7 +22,6 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -dd -O/tmp/r
     disabled
     seclabel u:r:recovery:s0
 
-
 # Idempotent one-shot readiness helper
 # Don't interrupt recovery UI / crypto startup
 service aera-wlan-early /system/bin/sh /system/bin/aera_wlan_early.sh
