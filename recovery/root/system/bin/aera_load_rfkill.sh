@@ -21,7 +21,13 @@ if [ -z "$RFKILL_MODULE" ]; then
     fail "rfkill.ko not found in any known module paths"
 fi
 
-insmod "$RFKILL_MODULE"
-rfkill_loaded || fail "Unable to load RFKill from $RFKILL_MODULE"
-LOGMSG "Loaded RFKill from $RFKILL_MODULE"
-finish 0
+if insmod "$RFKILL_MODULE" 2>> /tmp/recovery.log; then
+    if rfkill_loaded; then
+        LOGMSG "Loaded RFKill from $RFKILL_MODULE"
+        finish 0
+    else
+        fail "insmod succeeded but RFKill not in /proc/modules"
+    fi
+else
+    fail "insmod failed for $RFKILL_MODULE"
+fi
