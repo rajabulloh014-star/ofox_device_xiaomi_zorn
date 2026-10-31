@@ -50,3 +50,15 @@ PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += $(DEVICE_PATH)
+
+# ==============================================================================
+# AERA RECOVERY WIFI FIXES
+# ==============================================================================
+
+# Salin modul inti rfkill (dari system_dlkm) ke dalam recovery
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/recovery/root/lib/modules/rfkill.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/rfkill.ko
+
+# Salin konfigurasi firmware Wi-Fi kiwi_v2
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/recovery/root/vendor/etc/wifi/kiwi_v2/WCNSS_qcom_cfg.ini:$(TARGET_COPY_OUT_RECOVERY)/root/vendor/etc/wifi/kiwi_v2/WCNSS_qcom_cfg.ini
