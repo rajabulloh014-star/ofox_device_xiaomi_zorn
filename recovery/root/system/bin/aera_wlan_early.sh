@@ -31,10 +31,10 @@ fi
 
 log "Early WLAN requested; post.decrypt.modules=$(prop post.decrypt.modules)"
 
-# 1. Paksa jalankan skrip rfkill (Ini sudah benar)
+# 1. Paksa jalankan skrip rfkill
 /system/bin/aera_load_rfkill.sh || fail "WLAN failed: RFKill could not be loaded."
 
-# 2. Cari dan muat driver WiFi (TAMBAHKAN mac80211 & wlan_firmware_service)
+# 2. Cari dan muat driver WiFi
 for mod in cfg80211 mac80211 wlan_firmware_service qca_cld3_kiwi_v2; do
     loaded "$mod" && continue
     
@@ -42,7 +42,6 @@ for mod in cfg80211 mac80211 wlan_firmware_service qca_cld3_kiwi_v2; do
     
     if [ -z "$candidate" ]; then
         log "WLAN module missing on disk: $mod"
-        # Wajib gagal jika cfg80211 tidak ada
         if [ "$mod" = "cfg80211" ]; then fail "Critical module $mod not found"; fi
         continue
     fi
@@ -55,7 +54,7 @@ for mod in cfg80211 mac80211 wlan_firmware_service qca_cld3_kiwi_v2; do
     fi
 done
 
-# 3. Pastikan firmware_mnt ter-mount (UBAH 'ro' MENJADI 'rw' AGAR BISA TULIS MAC)
+# 3. Pastikan firmware_mnt ter-mount (Mode RW)
 if ! grep -q " /vendor/firmware_mnt " /proc/mounts; then
     log "Mounting firmware partition manually..."
     mkdir -p /firmware /vendor/firmware_mnt
@@ -68,8 +67,8 @@ if ! grep -q " /vendor/firmware_mnt " /proc/mounts; then
     mount -o remount,bind,rw /vendor/firmware_mnt
 fi
 
-# 4. Buat MAC Address (BUAT FOLDER DULU)
-mkdir -p /vendor/firmware/wlan/qca_cld/kiwi
+# 4. Buat MAC Address (Membuat folder kiwi_v2)
+mkdir -p /vendor/firmware/wlan/qca_cld/kiwi_v2
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
     if [ -x /system/bin/aera-zorn-wlan-mac ]; then
         /system/bin/aera-zorn-wlan-mac >> "$LOG" 2>&1 || log "Failed to generate MAC"
