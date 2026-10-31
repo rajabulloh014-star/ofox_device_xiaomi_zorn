@@ -1,34 +1,56 @@
-on property:twrp.modules.loaded=true
-    start aera-wlan-early
+# Xiaomi SM8650 / Zorn Qualcomm Wi-Fi recovery support for AERA.
+# Diadaptasi dari metode init.rc Xiaomi Dada (Peach -> Kiwi) + MAC Fix Zorn.
 
-# Preserve a post-decrypt retry for a worker that could not start initially,
-# without requesting a second WPSS boot after successful early startup.
+on init
+    chown root wifi /tmp
+    chmod 0775 /tmp
+    mkdir /tmp/recovery 0777 root root
+    mkdir /tmp/recovery/sockets 0770 wifi wifi
+    chown wifi wifi /tmp/recovery/sockets
+    chmod 0770 /tmp/recovery/sockets
+    mkdir /data/misc 0771 system system
+    mkdir /data/misc/wifi 0771 wifi wifi
+    mkdir /data/vendor 0771 system system
+    mkdir /data/vendor/firmware 0771 system system
+    mkdir /data/vendor/firmware/update 0771 system system
+    mkdir /data/vendor/firmware/update/wlan 0771 system system
+
+on early-boot
+    # 1. JALANKAN SKRIP MAC ADDRESS ZORN
+    # Remount vendor ke RW, lalu jalankan script MAC Anda
+    exec - root root -- /system/bin/sh -c "mount -o rw,remount /vendor; if [ -x /system/bin/aera-zorn-wlan-mac ]; then /system/bin/aera-zorn-wlan-mac; fi"
+
+    # 2. NYALAKAN HARDWARE WIFI (Zorn pakai icnss2)
+    write /sys/kernel/icnss2/wlan_en_delay 1000
+    write /sys/kernel/icnss2/wpss_boot 1
+    write /proc/sys/kernel/firmware_config/force_sysfs_fallback 1
+
+# Trigger setelah modul post-decrypt dimuat
 on property:post.decrypt.modules=true
-    start aera-wlan-early
+    setprop sys.aera.wlan.up 0
+    start aera-wlan-ready
 
 on property:wifi.driver.ready=true
-    write /dev/kmsg "[wlan] readying wpa_supplicant"
     mkdir /tmp/recovery 0777 root root
-    mkdir /tmp/recovery/sockets 0777 root root
+    mkdir /tmp/recovery/sockets 0770 wifi wifi
+    chown wifi wifi /tmp/recovery/sockets
     start wpa_supplicant
 
 on property:sys.aera.wlan.up=1 && property:wifi.driver.ready=true
     setprop sys.aera.wlan.up 0
     mkdir /tmp/recovery 0777 root root
-    mkdir /tmp/recovery/sockets 0777 root root
+    mkdir /tmp/recovery/sockets 0770 wifi wifi
+    chown wifi wifi /tmp/recovery/sockets
     start wpa_supplicant
 
-service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -dd -O/tmp/recovery/sockets -c/vendor/etc/wifi/wpa_supplicant.conf
+service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -O/tmp/recovery/sockets -c/vendor/etc/wifi/wpa_supplicant.conf
     disabled
     seclabel u:r:recovery:s0
 
-# Idempotent one-shot readiness helper
-# Don't interrupt recovery UI / crypto startup
-service aera-wlan-early /system/bin/sh /system/bin/aera_wlan_early.sh
-    class core
+# Service penantian wlan0 (Persis seperti Dada)
+service aera-wlan-ready /system/bin/sh -c "echo 'AERA Wi-Fi: waiting for wlan0' > /dev/kmsg; n=0; until test -e /sys/class/net/wlan0; do if test $$n -ge 60; then echo 'AERA Wi-Fi: wlan0 missing after 60 seconds' > /dev/kmsg; exit 1; fi; sleep 1; n=$$((n + 1)); done; echo 'AERA Wi-Fi: wlan0 ready' > /dev/kmsg; setprop wifi.driver.ready true"
     disabled
     oneshot
     user root
     group root
     seclabel u:r:recovery:s0
-    stdio_to_kmsg
