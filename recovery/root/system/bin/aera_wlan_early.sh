@@ -10,51 +10,23 @@ log() {
 }
 fail() { log "STOP: $*"; exit 1; }
 prop() { getprop "$1" 2>/dev/null; }
-loaded() {
-    if [ "$1" = qca_cld3_kiwi_v2 ]; then
-        grep -Eq '^(qca_cld3_kiwi_v2|wlan) ' /proc/modules 2>/dev/null
-    else
-        grep -q "^$1 " /proc/modules 2>/dev/null
-    fi
-}
 
 if [ -e /sys/class/net/wlan0 ]; then
     log "wlan0 already present; no WPSS re-boot"
     [ "$(prop wifi.driver.ready)" = true ] || setprop wifi.driver.ready true
     exit 0
 fi
-if [ "$(prop ro.aera.fastbootd)" = 1 ] || [ "$(prop ro.aera.fastbootd)" = true ] || \
-   [ "$(prop sys.usb.config.aera_fastbootd)" = 1 ]; then
-    log "fastbootd: skipping WLAN"
-    exit 0
-fi
 
 log "Early WLAN requested; post.decrypt.modules=$(prop post.decrypt.modules)"
 
-# 1. Paksa jalankan skrip rfkill
-/system/bin/aera_load_rfkill.sh || fail "WLAN failed: RFKill could not be loaded."
+# =========================================================================
+# SANGAT PENTING: Buka kunci partisi /vendor agar bisa ditulisi (RW)
+# =========================================================================
+log "Remounting / and /vendor to RW..."
+mount -o rw,remount / 2>> "$LOG"
+mount -o rw,remount /vendor 2>> "$LOG"
 
-# 2. Cari dan muat driver WiFi
-for mod in cfg80211 mac80211 wlan_firmware_service qca_cld3_kiwi_v2; do
-    loaded "$mod" && continue
-    
-    candidate=$(find /system_dlkm /vendor_dlkm /vendor /lib/modules -name "$mod.ko" 2>/dev/null | head -n 1)
-    
-    if [ -z "$candidate" ]; then
-        log "WLAN module missing on disk: $mod"
-        if [ "$mod" = "cfg80211" ]; then fail "Critical module $mod not found"; fi
-        continue
-    fi
-    
-    if insmod "$candidate" 2>> "$LOG"; then
-        log "Loaded WLAN module: $mod from $candidate"
-    else
-        log "Could not load WLAN module $mod from $candidate"
-        if [ "$mod" = "cfg80211" ]; then fail "Failed to insmod critical module $mod"; fi
-    fi
-done
-
-# 3. Pastikan firmware_mnt ter-mount (Mode RW)
+# 1. Pastikan firmware_mnt ter-mount (Mode RW)
 if ! grep -q " /vendor/firmware_mnt " /proc/mounts; then
     log "Mounting firmware partition manually..."
     mkdir -p /firmware /vendor/firmware_mnt
@@ -67,7 +39,7 @@ if ! grep -q " /vendor/firmware_mnt " /proc/mounts; then
     mount -o remount,bind,rw /vendor/firmware_mnt
 fi
 
-# 4. Buat MAC Address (Membuat folder kiwi_v2)
+# 2. Buat MAC Address
 mkdir -p /vendor/firmware/wlan/qca_cld/kiwi_v2
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
     if [ -x /system/bin/aera-zorn-wlan-mac ]; then
@@ -78,23 +50,33 @@ if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
     fi
 fi
 
-# 5. Nyalakan WPSS (WiFi Chip)
+# 3. Nyalakan WPSS (WiFi Chip)
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
     : > /tmp/aera_wlan_wpss_requested
     log "Requesting WPSS boot"
-    echo 1000 > /sys/kernel/icnss/wlan_en_delay || log "Cannot set WLAN delay"
-    echo 1 > /sys/kernel/icnss/wpss_boot || log "Cannot start WPSS"
-else
-    log "WPSS was already requested; waiting without repeating boot"
+    if [ -d /sys/kernel/icnss2 ]; then
+        echo 1000 > /sys/kernel/icnss2/wlan_en_delay 2>/dev/null
+        echo 1 > /sys/kernel/icnss2/wpss_boot 2>/dev/null && log "WPSS started via icnss2"
+    elif [ -d /sys/kernel/icnss ]; then
+        echo 1000 > /sys/kernel/icnss/wlan_en_delay 2>/dev/null
+        echo 1 > /sys/kernel/icnss/wpss_boot 2>/dev/null && log "WPSS started via icnss"
+    elif [ -d /sys/kernel/boot_wlan ]; then
+        echo 1 > /sys/kernel/boot_wlan/boot 2>/dev/null && log "WPSS started via boot_wlan"
+    else
+        log "WARNING: Cannot find WPSS boot node!"
+    fi
 fi
 
-# 6. Tunggu wlan0 muncul
+# 4. Tunggu wlan0 muncul
 count=0
 while [ "$count" -lt 45 ] && [ ! -e /sys/class/net/wlan0 ]; do
     sleep 1
     count=$((count+1))
 done
 
-[ -e /sys/class/net/wlan0 ] || fail "wlan0 absent after 45s"
-log "wlan0 available after ${count}s; publishing wifi.driver.ready"
-setprop wifi.driver.ready true
+if [ -e /sys/class/net/wlan0 ]; then
+    log "wlan0 available after ${count}s; publishing wifi.driver.ready"
+    setprop wifi.driver.ready true
+else
+    fail "wlan0 absent after 45s"
+fi
