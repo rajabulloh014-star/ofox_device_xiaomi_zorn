@@ -62,8 +62,8 @@ service zorn-flashlight /system/bin/zorn_flashlight.sh
     seclabel u:r:recovery:s0
 
 on property:twrp.modules.loaded=true
-    mkdir /firmware
-    mount vfat /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /firmware ro
+    # Baris mount vfat ke /firmware ro DIHAPUS dari sini.
+    # Biarkan script aera_wlan_early.sh yang melakukan mount rw.
     wait /sys/kernel/boot_adsp/boot
     write /sys/kernel/boot_adsp/boot 1
     wait /sys/class/power_supply/battery
