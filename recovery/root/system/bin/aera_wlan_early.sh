@@ -31,29 +31,31 @@ fi
 
 log "Early WLAN requested; post.decrypt.modules=$(prop post.decrypt.modules)"
 
-# 1. Paksa jalankan skrip rfkill
-/system/bin/aera_load_rfkill.sh || log "WARNING: RFKill load failed, continuing..."
+# 1. Paksa jalankan skrip rfkill (Ini sudah benar)
+/system/bin/aera_load_rfkill.sh || fail "WLAN failed: RFKill could not be loaded."
 
-# 2. Cari dan muat driver WiFi
-for mod in cfg80211 qca_cld3_kiwi_v2; do
+# 2. Cari dan muat driver WiFi (TAMBAHKAN mac80211 & wlan_firmware_service)
+for mod in cfg80211 mac80211 wlan_firmware_service qca_cld3_kiwi_v2; do
     loaded "$mod" && continue
     
     candidate=$(find /system_dlkm /vendor_dlkm /vendor /lib/modules -name "$mod.ko" 2>/dev/null | head -n 1)
     
     if [ -z "$candidate" ]; then
         log "WLAN module missing on disk: $mod"
-        fail "WLAN module $mod not found"
+        # Wajib gagal jika cfg80211 tidak ada
+        if [ "$mod" = "cfg80211" ]; then fail "Critical module $mod not found"; fi
+        continue
     fi
     
     if insmod "$candidate" 2>> "$LOG"; then
         log "Loaded WLAN module: $mod from $candidate"
     else
         log "Could not load WLAN module $mod from $candidate"
-        fail "Failed to insmod $mod"
+        if [ "$mod" = "cfg80211" ]; then fail "Failed to insmod critical module $mod"; fi
     fi
 done
 
-# 3. Pastikan firmware_mnt ter-mount (Mount sendiri jika belum)
+# 3. Pastikan firmware_mnt ter-mount (UBAH 'ro' MENJADI 'rw' AGAR BISA TULIS MAC)
 if ! grep -q " /vendor/firmware_mnt " /proc/mounts; then
     log "Mounting firmware partition manually..."
     mkdir -p /firmware /vendor/firmware_mnt
@@ -61,16 +63,20 @@ if ! grep -q " /vendor/firmware_mnt " /proc/mounts; then
     MODEM_DEV="/dev/block/bootdevice/by-name/modem${SLOT}"
     [ -b "${MODEM_DEV}" ] || MODEM_DEV="/dev/block/by-name/modem${SLOT}"
     
-    mount -t vfat -o ro,uid=0,gid=0,fmask=0133,dmask=0022 "${MODEM_DEV}" /firmware
+    mount -t vfat -o rw,uid=0,gid=0,fmask=0133,dmask=0022 "${MODEM_DEV}" /firmware
     mount -o bind /firmware /vendor/firmware_mnt
-    mount -o remount,bind,ro /vendor/firmware_mnt
+    mount -o remount,bind,rw /vendor/firmware_mnt
 fi
 
-# 4. Buat MAC Address
+# 4. Buat MAC Address (BUAT FOLDER DULU)
+mkdir -p /vendor/firmware/wlan/qca_cld/kiwi
 if [ ! -e /tmp/aera_wlan_wpss_requested ]; then
-    [ -x /system/bin/aera-zorn-wlan-mac ] || log "Missing recovery MAC helper"
-    /system/bin/aera-zorn-wlan-mac >> "$LOG" 2>&1 || log "Failed to generate MAC"
-    log "Prepared per-device WLAN MAC file before WPSS boot"
+    if [ -x /system/bin/aera-zorn-wlan-mac ]; then
+        /system/bin/aera-zorn-wlan-mac >> "$LOG" 2>&1 || log "Failed to generate MAC"
+        log "Prepared per-device WLAN MAC file before WPSS boot"
+    else
+        log "Missing recovery MAC helper /system/bin/aera-zorn-wlan-mac"
+    fi
 fi
 
 # 5. Nyalakan WPSS (WiFi Chip)
