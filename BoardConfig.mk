@@ -161,8 +161,8 @@ AERA_SUPPORT_INPUT_AIDL_HAPTICS := true
 AERA_SUPPORT_INPUT_AIDL_HAPTICS_FQNAME := "IVibrator/vibratorfeature"
 
 # --- Modules (Termasuk WiFi) ---
-# Menggabungkan semua modul ke dalam satu baris untuk menghindari duplikasi
-AERA_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko focaltech_touch.ko nxp-nci.ko qti_battery_charger.ko xiaomi_touch.ko rfkill.ko cfg80211.ko gsim.ko rmnet_mem.ko ipam.ko qca_cld3_kiwi_v2.ko"
+# FIX: Menambahkan mac80211.ko dan wlan_firmware_service.ko
+AERA_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko focaltech_touch.ko nxp-nci.ko qti_battery_charger.ko xiaomi_touch.ko rfkill.ko cfg80211.ko mac80211.ko wlan_firmware_service.ko gsim.ko rmnet_mem.ko ipam.ko qca_cld3_kiwi_v2.ko"
 AERA_POST_DECRYPT_MODULES := "aera_post_decrypt_stage_only.ko"
 AERA_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
 
